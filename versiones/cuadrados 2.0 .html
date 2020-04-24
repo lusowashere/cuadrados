@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<!--
+    versión 1.0 - juego que empieza sólo y con 6x6
+    versión 2.0 - se puede seleccionar el tamaño
+
+-->
+<html>
+    <style>
+        .esquina{
+            width:2px;
+            height: 2px;
+        }
+
+        .cuadrado{
+            width:20px;
+            height: 20px;   
+        }
+
+        #labelTurno{
+            color:white;
+        }
+
+    </style>
+    
+    <body>
+        <center>
+        <div id=cuadroConfiguracion  >
+            <div style="font-weight:bold;font-size:200%">CUADRADOS</div>
+            <table>
+            <tr>
+            <td>filas:</td><td><select id="comboBoxFilas" ></select></td>
+            <td>columnas:</td><td><select id="comboBoxColumnas"></select></td></tr>
+            <tr><td colspan=4 style="text-align:center"><button onclick="iniciarPartida()" style="font-weight: bold">empezar</button></td></tr>
+            </table>
+        </div>
+        <div id=marcador style="visibility:hidden">
+            <table>
+                <tr>
+                    <td style="text-align: right">Turno</td><td id=labelTurno></td>
+                </tr><tr></tr><tr id="filaMarcadores" style="visibility: hidden">
+                    <td id=marcador1 style="text-align: center"></td><td id=marcador2 style="text-align: center"></td>
+                </tr>
+            </table>
+        </div>
+        <div id=lugarParaTabla></div>
+        <div id="mensajeFinal" style="font-weight: bold;font-size: 150%"></div>
+        </center>
+    </body>
+    <script>
+        var filas=6, columnas=6;
+        var tablero=[];
+        var turno;
+        var puntos1,puntos2;
+
+        /////////////"BORDES" ,"COLOR 1","COLOR 2","BLANCO" ,"Color1Claro","color2claro"
+        var colores=["#d9d9d9","#FF0000","#0000FF","#FFFFFF","#F5A9A9"    ,"#819FF7"];
+
+        //iniciarPartida();
+
+        iniciarPagina();
+        function iniciarPagina(){
+            var comboFilas=document.getElementById("comboBoxFilas");
+            var comboColumnas=document.getElementById("comboBoxColumnas"); 
+            for(i=2;i<=10;i++){
+                var optionF=document.createElement("option");
+                var optionC=document.createElement("option");
+                optionF.text=i;
+                optionF.value=i;
+                optionC.text=i;
+                optionF.text=i;
+                if(i==6){
+                    optionC.defaultSelected=true;
+                    optionF.defaultSelected=true;
+                }
+                comboFilas.add(optionC);
+                comboColumnas.add(optionF);
+            }
+  
+        }
+
+        function crearTablero(){
+            var esFilaCuadrados;
+
+            for(i=0;i<filas*2+1;i++){
+                var fila=[];
+                if(i%2==1){esFilaCuadrados=true;}else{esFilaCuadrados=false;}
+                for(j=0;j<columnas*2+1;j++){
+                    var celda={"fila":i,"columna":j,"color":0,"tipo":"ninguno","ladosMarcados":0};
+                    if(!esFilaCuadrados){
+                        if(j%2==1){
+                            celda.tipo="horizontal";
+                        }else{celda.tipo="esquina";}
+                    }else{
+                        if(j%2==1){//cuadrados
+                            celda.tipo="cuadrado"; 
+                            celda.color=3;                          
+                        }else{celda.tipo="vertical";}
+                    }
+                    fila.push(celda);
+                }
+                tablero.push(fila);
+            }
+            //document.getElementById("lugarParaTabla").innerHTML=tablero.toString();
+            //console.log(tablero);
+            dibujarTablero();
+        }//fin de la función crear tablero
+
+
+        function dibujarTablero(){
+            var dibujo="<table>";
+            for(i=0;i<tablero.length;i++){
+                dibujo+="<tr>";
+                for(j=0;j<tablero[i].length;j++){
+                    var celda=tablero[i][j];
+                    dibujo+="<td class="+celda.tipo+" style='background-color:"+colores[celda.color]+"' ";
+                    if(celda.tipo=="horizontal" || celda.tipo=="vertical"){
+                        dibujo+=" onclick='marcarLinea("+celda.fila+","+celda.columna+")'";
+                    }
+                    
+                    dibujo+="></td>";
+                }
+                dibujo+="</tr>";
+            }
+            document.getElementById("lugarParaTabla").innerHTML=dibujo+"</table>";
+        }
+
+        function iniciarPartida(){
+
+            filas=document.getElementById("comboBoxFilas").value;
+            columnas=document.getElementById("comboBoxColumnas").value;
+            document.getElementById("cuadroConfiguracion").style.display="none";
+
+            crearTablero();
+
+            //decido quién empieza
+
+            turno=1+((Math.floor( 10*Math.random()))%2);
+
+            cambiarTurno();
+        }
+
+        function cambiarTurno(){
+            if(turno==1){turno=2;}else{turno=1};
+            document.getElementById("marcador").style.visibility="visible";
+            var labelTurno=document.getElementById("labelTurno");
+            labelTurno.innerHTML="Jugador "+turno;
+            labelTurno.style.backgroundColor=colores[turno];
+        }
+        
+        function marcarLinea(fila,columna){
+            var cambiaElTurno=false;
+
+            var celda=tablero[fila][columna];
+            if(celda.color==0){
+                tablero[fila][columna].color=turno;
+                cambiaElTurno=true;//se ha pintado una linea, se cambia a no ser que haya un cuadrado rellenado nuevo
+
+                if(celda.tipo=="horizontal"){
+                    if(fila>0){tablero[fila-1][columna].ladosMarcados=tablero[fila-1][columna].ladosMarcados+1;}
+                    if(fila<filas*2){tablero[fila+1][columna].ladosMarcados=tablero[fila+1][columna].ladosMarcados+1;}
+                }else{//es vertical
+                    if(columna>0){tablero[fila][columna-1].ladosMarcados=tablero[fila][columna-1].ladosMarcados+1;}
+                    if(columna<columnas*2){tablero[fila][columna+1].ladosMarcados=tablero[fila][columna+1].ladosMarcados+1;}
+                }
+
+                //compruebo si hay algún cuadrado nuevo
+                for(i=0;i<tablero.length;i++){
+                    //console.log(tablero);
+                    for(j=0;j<tablero[i].length;j++){
+                        celda=tablero[i][j];
+                        if(celda.color==3 && celda.ladosMarcados==4){
+                            celda.color=turno+3;
+                            cambiaElTurno=false;
+                            rellenarMarcadores();
+                        }
+                    }
+                }
+
+            }
+
+            dibujarTablero();
+
+            
+
+            if(cambiaElTurno){
+                cambiarTurno();
+            }
+        }//fin de la función marcar linea
+
+
+        function rellenarMarcadores(){
+                puntos1=0;
+                puntos2=0;
+                
+                for(x=0;x<tablero.length;x++){
+                    for(y=0;y<tablero[x].length;y++){
+                        if(tablero[x][y].ladosMarcados==4){
+                            if(tablero[x][y].color==1+3){puntos1+=1;}else{puntos2+=1;}
+                        }
+                    }
+                }
+
+                document.getElementById("filaMarcadores").style.visibility="visible";
+
+                var marcador=document.getElementById("marcador1");
+                marcador.innerHTML=puntos1;
+                marcador.style.backgroundColor=colores[1+3];
+                marcador.style.color="#FFFFFF";
+
+                marcador=document.getElementById("marcador2");
+                marcador.innerHTML=puntos2;
+                marcador.style.backgroundColor=colores[2+3];
+                marcador.style.color="#FFFFFF";
+
+
+                //aprovecho y compruebo si se ha acabado la partida
+                if(puntos1+puntos2==filas*columnas){
+                    var mensajeFinal="¡¡PARTIDA TERMINADA!!<br>Gana el jugador ";
+                    if(puntos1>puntos2){
+                        mensajeFinal+=" 1";
+                    }else if(puntos2>puntos1){
+                        mensajeFinal+=" 2";
+                    }else{
+                        mensajeFinal="¡¡PARTIDA TERMINADA!!<br>¡es un empate!";
+                    }
+                    document.getElementById("mensajeFinal").innerHTML=mensajeFinal;
+                }
+
+
+        }
+
+
+    </script>
+</html>
